@@ -177,7 +177,8 @@ async def process_evidence_against(message: Message, state: FSMContext):
         text = "Насколько это вероятно? (0–100%)\nНапиши число."
         await message.answer(text)
         await state.set_state(DetectiveStates.waiting_probability)
-        @router.message(DetectiveStates.waiting_probability)
+
+@router.message(DetectiveStates.waiting_probability)
 async def process_probability(message: Message, state: FSMContext):
     try:
         probability = int(message.text)
@@ -374,5 +375,4 @@ async def finish_session(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
 
 def register_handlers(dp):
-
     dp.include_router(router)
