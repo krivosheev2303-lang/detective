@@ -33,7 +33,8 @@ async def start_investigation(callback: CallbackQuery, state: FSMContext):
     text = (
         "🔍 ШАГ 1. Место преступления\n\n"
         "Какая мысль запустила тревогу?\n"
-        "Напиши её дословно."
+        "Напиши её дословно.\n\n"
+        "Пример: «Если я ошибусь — все поймут, что я ноль»."
     )
     await callback.message.edit_text(text)
     await state.set_state(DetectiveStates.waiting_thought)
@@ -44,7 +45,9 @@ async def process_thought(message: Message, state: FSMContext):
     await state.update_data(thought=message.text)
     text = (
         "Принято.\n\n"
-        "Оцени тревогу сейчас от 1 до 10."
+        "Оцени тревогу сейчас от 1 до 10.\n\n"
+        "1 — почти спокойно.\n"
+        "10 — максимум, трясёт."
     )
     await message.answer(text, reply_markup=get_anxiety_keyboard())
     await state.set_state(DetectiveStates.waiting_anxiety_before)
@@ -60,13 +63,15 @@ async def process_anxiety_before(callback: CallbackQuery, state: FSMContext):
             "Тревога высокая.\n"
             "Пойдём по ускоренному протоколу.\n\n"
             "🔍 ШАГ 2. Допрос мысли\n\n"
-            "Какое искажение использует мозг?"
+            "Какое искажение использует мозг?\n"
+            "Выбери вариант, который больше всего похож."
         )
         await state.update_data(short_mode=True)
     else:
         text = (
             "🔍 ШАГ 2. Допрос мысли\n\n"
-            "Какое искажение использует мозг?"
+            "Какое искажение использует мозг?\n"
+            "Выбери вариант, который больше всего похож."
         )
         await state.update_data(short_mode=False)
 
@@ -78,22 +83,22 @@ async def process_anxiety_before(callback: CallbackQuery, state: FSMContext):
 @router.callback_query(F.data.startswith("dist_"), DetectiveStates.waiting_distortion)
 async def process_distortion(callback: CallbackQuery, state: FSMContext):
     distortion_map = {
-        "dist_catastrophizing": "Катастрофизация",
+        "dist_catastrophizing": "Катастрофа",
         "dist_mindreading": "Чтение мыслей",
-        "dist_personalization": "Персонализация",
         "dist_blackwhite": "Всё или ничего",
         "dist_fortune": "Предсказание будущего",
-        "dist_discount": "Обесценивание позитива",
+        "dist_discount": "Обесценивание хорошего",
         "dist_should": "Долженствование",
-        "dist_emotional": "Эмоциональное доказательство"
     }
 
     distortion = distortion_map.get(callback.data, "Неизвестно")
     await state.update_data(distortion=distortion)
 
     text = (
-        "Это реальная угроза прямо сейчас\n"
-        "или неопределённость?"
+        "Это реальная угроза СЕЙЧАС?\n\n"
+        "УГРОЗА: «У меня горит квартира».\n"
+        "НЕОПРЕДЕЛЁННОСТЬ: «А вдруг завтра будет пожар?».\n\n"
+        "Твоя мысль ближе к чему?"
     )
     await callback.message.edit_text(text, reply_markup=get_threat_keyboard())
     await state.set_state(DetectiveStates.waiting_threat_type)
@@ -106,7 +111,12 @@ async def process_threat_type(callback: CallbackQuery, state: FSMContext):
     await state.update_data(threat_type=threat_type)
 
     if threat_type == "uncertainty":
-        text = "Что здесь неизвестно?\nНапиши коротко."
+        text = (
+            "Что здесь неизвестно?\n\n"
+            "Пример: мысль «Я провалю экзамен».\n"
+            "Неизвестно: «Какой будет результат».\n\n"
+            "Напиши коротко: что именно не знаешь?"
+        )
         await callback.message.edit_text(text)
         await state.set_state(DetectiveStates.waiting_unknown)
     else:
@@ -115,18 +125,27 @@ async def process_threat_type(callback: CallbackQuery, state: FSMContext):
 
         if short_mode:
             text = (
-                "🔍 ШАГ 3. Улики (ускоренная версия)\n\n"
-                "Напиши 1 факт ПРОТИВ этой мысли.\n"
-                "(только факты, без эмоций)"
+                "🔍 ШАГ 3. Факт ПРОТИВ мысли\n\n"
+                "Факты ПРОТИВ — это реальные события,\n"
+                "которые показывают, что всё не так страшно.\n\n"
+                "Примеры:\n"
+                "• «У меня 5 клиентов на этой неделе»\n"
+                "• «Я ответил на все сообщения»\n"
+                "• «Клиент сказал спасибо»\n\n"
+                "Напиши 1 факт ПРОТИВ твоей мысли."
             )
             await callback.message.edit_text(text)
             await state.set_state(DetectiveStates.waiting_evidence_against)
         else:
             text = (
-                "🔍 ШАГ 3. Улики\n\n"
-                "Теперь как детектив.\n"
-                "Напиши 1 факт ЗА эту мысль.\n"
-                "(только факты, без эмоций)"
+                "🔍 ШАГ 3. Факт ЗА мысль\n\n"
+                "Факты ЗА — это реальные события,\n"
+                "которые поддерживают твою тревожную мысль.\n\n"
+                "Примеры:\n"
+                "• «2 дня не было новых клиентов»\n"
+                "• «Я забыл ответить на сообщение»\n"
+                "• «Клиент был недоволен»\n\n"
+                "Напиши 1 факт ЗА твою мысль."
             )
             await callback.message.edit_text(text)
             await state.set_state(DetectiveStates.waiting_evidence_for)
@@ -142,18 +161,27 @@ async def process_unknown(message: Message, state: FSMContext):
 
     if short_mode:
         text = (
-            "🔍 ШАГ 3. Улики (ускоренная версия)\n\n"
-            "Напиши 1 факт ПРОТИВ этой мысли.\n"
-            "(только факты, без эмоций)"
+            "🔍 ШАГ 3. Факт ПРОТИВ мысли\n\n"
+            "Факты ПРОТИВ — это реальные события,\n"
+            "которые показывают, что всё не так страшно.\n\n"
+            "Примеры:\n"
+            "• «У меня 5 клиентов на этой неделе»\n"
+            "• «Я ответил на все сообщения»\n"
+            "• «Клиент сказал спасибо»\n\n"
+            "Напиши 1 факт ПРОТИВ."
         )
         await message.answer(text)
         await state.set_state(DetectiveStates.waiting_evidence_against)
     else:
         text = (
-            "🔍 ШАГ 3. Улики\n\n"
-            "Теперь как детектив.\n"
-            "Напиши 1 факт ЗА эту мысль.\n"
-            "(только факты, без эмоций)"
+            "🔍 ШАГ 3. Факт ЗА мысль\n\n"
+            "Факты ЗА — это реальные события,\n"
+            "которые поддерживают твою тревожную мысль.\n\n"
+            "Примеры:\n"
+            "• «2 дня не было новых клиентов»\n"
+            "• «Я забыл ответить на сообщение»\n"
+            "• «Клиент был недоволен»\n\n"
+            "Напиши 1 факт ЗА твою мысль."
         )
         await message.answer(text)
         await state.set_state(DetectiveStates.waiting_evidence_for)
@@ -162,7 +190,14 @@ async def process_unknown(message: Message, state: FSMContext):
 @router.message(DetectiveStates.waiting_evidence_for)
 async def process_evidence_for(message: Message, state: FSMContext):
     await state.update_data(evidence_for=message.text)
-    text = "Теперь 1 факт ПРОТИВ."
+    text = (
+        "🔍 Теперь факт ПРОТИВ мысли\n\n"
+        "Примеры фактов ПРОТИВ:\n"
+        "• «У меня 5 клиентов на этой неделе»\n"
+        "• «Я ответил на все сообщения»\n"
+        "• «Клиент сказал спасибо»\n\n"
+        "Напиши 1 факт ПРОТИВ."
+    )
     await message.answer(text)
     await state.set_state(DetectiveStates.waiting_evidence_against)
 
@@ -175,15 +210,23 @@ async def process_evidence_against(message: Message, state: FSMContext):
 
     if short_mode:
         text = (
-            "🔍 ШАГ 4. Переформулирование\n\n"
-            "Напиши более реалистичную мысль.\n"
-            "Не \"всё отлично\".\n"
-            "А честную и сбалансированную."
+            "🔍 ШАГ 4. Новая мысль\n\n"
+            "Пример:\n"
+            "Было: «Я полный неудачник».\n"
+            "Стало: «У меня есть ошибки, но я стараюсь и учусь».\n\n"
+            "Напиши свою более честную и спокойную мысль.\n"
+            "Не «всё супер», а реалистично."
         )
         await message.answer(text)
         await state.set_state(DetectiveStates.waiting_reframed)
     else:
-        text = "Насколько это вероятно? (0–100%)\nНапиши число."
+        text = (
+            "Насколько это вероятно? (0–100%)\n\n"
+            "Пример: «Меня точно уволят завтра».\n"
+            "Если до этого тебя никогда не увольняли,\n"
+            "может быть это не 100%, а, например, 20–30%.\n\n"
+            "Напиши число от 0 до 100."
+        )
         await message.answer(text)
         await state.set_state(DetectiveStates.waiting_probability)
 
@@ -194,7 +237,13 @@ async def process_probability(message: Message, state: FSMContext):
         probability = int(message.text)
         if 0 <= probability <= 100:
             await state.update_data(probability=probability)
-            text = "Если это случится — насколько плохо? (0–10)"
+            text = (
+                "Если это всё-таки случится — насколько это плохо? (0–10)\n\n"
+                "Пример: «Уволят».\n"
+                "Это неприятно, но не конец жизни.\n"
+                "Можно оценить как 7/10, а не 10/10.\n\n"
+                "Напиши число от 0 до 10."
+            )
             await message.answer(text)
             await state.set_state(DetectiveStates.waiting_impact)
         else:
@@ -210,8 +259,14 @@ async def process_impact(message: Message, state: FSMContext):
         if 0 <= impact <= 10:
             await state.update_data(impact=impact)
             text = (
-                "Если бы ты был детективом,\n"
-                "какой вердикт вынес бы?"
+                "Теперь как детектив.\n"
+                "Посмотрев на все улики:\n\n"
+                "Какой вердикт ты бы вынес?\n\n"
+                "Примеры:\n"
+                "• «Недостаточно улик, чтобы считать это катастрофой»\n"
+                "• «Мысль преувеличена, но риск есть»\n"
+                "• «Это неприятно, но не конец»\n\n"
+                "Напиши свой вердикт."
             )
             await message.answer(text)
             await state.set_state(DetectiveStates.waiting_verdict)
@@ -225,10 +280,11 @@ async def process_impact(message: Message, state: FSMContext):
 async def process_verdict(message: Message, state: FSMContext):
     await state.update_data(verdict=message.text)
     text = (
-        "🔍 ШАГ 4. Переформулирование\n\n"
-        "Напиши более реалистичную мысль.\n"
-        "Не \"всё отлично\".\n"
-        "А честную и сбалансированную."
+        "🔍 ШАГ 4. Новая мысль\n\n"
+        "Пример:\n"
+        "Было: «Я точно провалюсь».\n"
+        "Стало: «Мне тревожно, но я готовлюсь и могу справиться».\n\n"
+        "Теперь сформулируй свою более реалистичную мысль."
     )
     await message.answer(text)
     await state.set_state(DetectiveStates.waiting_reframed)
@@ -237,7 +293,12 @@ async def process_verdict(message: Message, state: FSMContext):
 @router.message(DetectiveStates.waiting_reframed)
 async def process_reframed(message: Message, state: FSMContext):
     await state.update_data(reframed=message.text)
-    text = "Насколько ты веришь в неё? (0–100%)"
+    text = (
+        "Насколько ты веришь в новую мысль? (0–100%)\n\n"
+        "0 — совсем не верю.\n"
+        "100 — верю полностью.\n\n"
+        "Напиши число."
+    )
     await message.answer(text)
     await state.set_state(DetectiveStates.waiting_belief)
 
@@ -248,7 +309,10 @@ async def process_belief(message: Message, state: FSMContext):
         belief = int(message.text)
         if 0 <= belief <= 100:
             await state.update_data(belief=belief)
-            text = "Кроме тревоги, что ещё есть?"
+            text = (
+                "Кроме тревоги, что ты ещё чувствуешь?\n\n"
+                "Например: раздражение, грусть, усталость, стыд…"
+            )
             await message.answer(text, reply_markup=get_emotion_keyboard())
             await state.set_state(DetectiveStates.waiting_other_emotion)
         else:
@@ -272,7 +336,11 @@ async def process_other_emotion(callback: CallbackQuery, state: FSMContext):
 
     text = (
         "🔍 ШАГ 5. Возврат контроля\n\n"
-        "Что ты реально контролируешь прямо сейчас?\n"
+        "Что ты реально контролируешь прямо сейчас?\n\n"
+        "Примеры:\n"
+        "• «Могу доделать одну задачу»\n"
+        "• «Могу написать человеку»\n"
+        "• «Могу лечь спать вовремя»\n\n"
         "Напиши коротко."
     )
     await callback.message.edit_text(text)
@@ -283,7 +351,10 @@ async def process_other_emotion(callback: CallbackQuery, state: FSMContext):
 @router.message(DetectiveStates.waiting_control)
 async def process_control(message: Message, state: FSMContext):
     await state.update_data(control_direct=message.text)
-    text = "Где в теле тревога сильнее?"
+    text = (
+        "Где в теле тревога сильнее всего?\n\n"
+        "Выбери область."
+    )
     await message.answer(text, reply_markup=get_body_keyboard())
     await state.set_state(DetectiveStates.waiting_body_location)
 
@@ -302,7 +373,8 @@ async def process_body_location(callback: CallbackQuery, state: FSMContext):
 
     text = (
         "Сделай 3 медленных выдоха.\n"
-        "Я подожду."
+        "На каждый выдох — расслабь тело там, где больше всего зажато.\n\n"
+        "Нажми «Сделал», когда будешь готов."
     )
     await callback.message.edit_text(text, reply_markup=get_breathing_keyboard())
     await state.set_state(DetectiveStates.waiting_breathing)
@@ -311,7 +383,10 @@ async def process_body_location(callback: CallbackQuery, state: FSMContext):
 
 @router.callback_query(F.data == "breathing_done", DetectiveStates.waiting_breathing)
 async def process_breathing(callback: CallbackQuery, state: FSMContext):
-    text = "Выбери микро-действие на 5–10 минут:"
+    text = (
+        "Выбери микро-действие на 5–10 минут.\n\n"
+        "Важно: небольшое и выполнимое прямо сегодня."
+    )
     await callback.message.edit_text(text, reply_markup=get_micro_action_keyboard())
     await state.set_state(DetectiveStates.waiting_micro_action)
     await callback.answer()
@@ -328,13 +403,17 @@ async def process_micro_action(callback: CallbackQuery, state: FSMContext):
     }
 
     if callback.data == "action_custom":
-        text = "Напиши своё действие:"
+        text = "Напиши своё действие на 5–10 минут."
         await callback.message.edit_text(text)
         await state.set_state(DetectiveStates.waiting_custom_action)
     else:
         action = action_map.get(callback.data, "Неизвестно")
         await state.update_data(micro_action=action)
-        text = "Из-за тревоги ты сегодня НЕ будешь:"
+        text = (
+            "Из-за тревоги ты сегодня НЕ будешь делать что?\n\n"
+            "Пример: «Не буду час гуглить симптомы»\n"
+            "или «Не буду проверять мессенджер каждые 2 минуты»."
+        )
         await callback.message.edit_text(text)
         await state.set_state(DetectiveStates.waiting_no_compulsion)
 
@@ -344,7 +423,11 @@ async def process_micro_action(callback: CallbackQuery, state: FSMContext):
 @router.message(DetectiveStates.waiting_custom_action)
 async def process_custom_action(message: Message, state: FSMContext):
     await state.update_data(micro_action=message.text)
-    text = "Из-за тревоги ты сегодня НЕ будешь:"
+    text = (
+        "Из-за тревоги ты сегодня НЕ будешь делать что?\n\n"
+        "Пример: «Не буду час гуглить симптомы»\n"
+        "или «Не буду проверять мессенджер каждые 2 минуты»."
+    )
     await message.answer(text)
     await state.set_state(DetectiveStates.waiting_no_compulsion)
 
@@ -352,7 +435,11 @@ async def process_custom_action(message: Message, state: FSMContext):
 @router.message(DetectiveStates.waiting_no_compulsion)
 async def process_no_compulsion(message: Message, state: FSMContext):
     await state.update_data(no_compulsion=message.text)
-    text = "Оцени тревогу сейчас (1–10)"
+    text = (
+        "Ещё раз оцени тревогу сейчас (1–10).\n\n"
+        "1 — почти спокойно.\n"
+        "10 — максимум."
+    )
     await message.answer(text, reply_markup=get_anxiety_keyboard())
     await state.set_state(DetectiveStates.waiting_anxiety_after)
 
@@ -369,9 +456,9 @@ async def process_anxiety_after(callback: CallbackQuery, state: FSMContext):
         f"Было: {anxiety_before}/10\n"
         f"Стало: {anxiety_after}/10\n\n"
         "Ты не убежал от мысли.\n"
-        "Ты её проверил.\n\n"
-        "Если бы этой мысли не было —\n"
-        "что бы ты сейчас делал?"
+        "Ты её проверил как детектив.\n\n"
+        "Если бы этой мысли сейчас не было —\n"
+        "что бы ты делал?"
     )
     await callback.message.edit_text(text)
     await state.set_state(DetectiveStates.waiting_bridge_action)
@@ -385,8 +472,8 @@ async def process_bridge_action(message: Message, state: FSMContext):
     text = (
         "✅ Сессия завершена.\n\n"
         "Ты сделал важную работу.\n"
-        "Это навык. И он усиливается с практикой.\n\n"
-        "Для новой сессии нажми /start"
+        "Это навык, он усиливается с практикой.\n\n"
+        "Когда захочешь ещё одну сессию — нажми /start."
     )
     await message.answer(text, reply_markup=get_finish_keyboard())
     await state.clear()
