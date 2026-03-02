@@ -91,7 +91,11 @@ async def process_anxiety_before(callback: CallbackQuery, state: FSMContext):
         )
         await state.update_data(short_mode=False)
 
-    await callback.message.edit_text(text, reply_markup=get_distortion_keyboard())
+    await callback.message.edit_text(
+    text,
+    reply_markup=get_distortion_keyboard(),
+    parse_mode="Markdown"
+)
     await state.set_state(DetectiveStates.waiting_distortion)
     await callback.answer()
 
@@ -505,6 +509,7 @@ async def finish_session(callback: CallbackQuery, state: FSMContext):
 
 def register_handlers(dp):
     dp.include_router(router)
+
 
 
 
