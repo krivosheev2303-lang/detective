@@ -58,7 +58,7 @@ async def process_anxiety_before(callback: CallbackQuery, state: FSMContext):
     anxiety = int(callback.data.split("_")[1])
     await state.update_data(anxiety_before=anxiety)
 
-        if anxiety > 7:
+    if anxiety > 7:
         text = (
             "Тревога высокая.\n"
             "Пойдём по ускоренному протоколу.\n\n"
@@ -91,10 +91,10 @@ async def process_anxiety_before(callback: CallbackQuery, state: FSMContext):
         )
         await state.update_data(short_mode=False)
 
-
     await callback.message.edit_text(text, reply_markup=get_distortion_keyboard())
     await state.set_state(DetectiveStates.waiting_distortion)
     await callback.answer()
+
 
 
 @router.callback_query(F.data.startswith("dist_"), DetectiveStates.waiting_distortion)
@@ -505,4 +505,5 @@ async def finish_session(callback: CallbackQuery, state: FSMContext):
 
 def register_handlers(dp):
     dp.include_router(router)
+
 
