@@ -16,14 +16,16 @@ def get_anxiety_keyboard():
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 def get_distortion_keyboard():
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🔥 Всё или ничего\n(«Если не идеально — полный провал»)", callback_data="dist_blackwhite")],
-        [InlineKeyboardButton(text="🧠 Чтение мыслей\n(«Они думают, что я идиот»)", callback_data="dist_mindreading")],
-        [InlineKeyboardButton(text="🔮 Предсказание будущего\n(«Я точно провалюсь»)", callback_data="dist_fortune")],
-        [InlineKeyboardButton(text="💥 Катастрофа\n(«Если ошибусь — всё рухнет»)", callback_data="dist_catastrophizing")],
-        [InlineKeyboardButton(text="🖤 Обесценивание хорошего\n(«Это просто повезло»)", callback_data="dist_discount")],
-        [InlineKeyboardButton(text="😩 Долженствование\n(«Я должен быть идеальным»)", callback_data="dist_should")]
-    ])
+return InlineKeyboardMarkup(inline_keyboard=[
+[InlineKeyboardButton(text="Катастрофизация", callback_data="dist_catastrophizing")],
+[InlineKeyboardButton(text="Чтение мыслей", callback_data="dist_mindreading")],
+[InlineKeyboardButton(text="Персонализация", callback_data="dist_personalization")],
+[InlineKeyboardButton(text="Всё или ничего", callback_data="dist_blackwhite")],
+[InlineKeyboardButton(text="Предсказание будущего", callback_data="dist_fortune")],
+[InlineKeyboardButton(text="Обесценивание позитива", callback_data="dist_discount")],
+[InlineKeyboardButton(text="Долженствование", callback_data="dist_should")],
+[InlineKeyboardButton(text="Эмоциональное доказательство", callback_data="dist_emotional")]
+])
 
 
 def get_threat_keyboard():
@@ -69,3 +71,4 @@ def get_finish_keyboard():
         [InlineKeyboardButton(text="Завершить", callback_data="finish")]
 
     ])
+
